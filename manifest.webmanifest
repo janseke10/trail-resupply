@@ -1,0 +1,8 @@
+{
+  "name": "Trail Resupply",
+  "short_name": "Resupply",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#eef1ee",
+  "theme_color": "#1d3b3a"
+}
