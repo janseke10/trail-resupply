@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Resupply">
-<meta name="theme-color" content="#1d3b3a">
+<meta name="theme-color" content="#3a5a40">
 <title>Trail Resupply</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,18 +15,23 @@
   /* Layout: one phone column. Summary of what's left to buy on top, the plan below it,
      the basket at the bottom, and a Scan button that always sits under your thumb. */
   :root {
-    --bg: #eef1ee; --card: #ffffff; --ink: #18302f; --muted: #5d6f6c; --line: #d5ddd9;
-    --accent: #e8590c; --accent-ink: #ffffff; --accent-soft: #fde6d8;
-    --ok: #2b8a3e; --ok-soft: #dcf1e1; --track: #e2e8e5;
+    /* Autumn palette: berry #A53B54, ochre #CD9C65, forest #3A5A40, mint #E8F7EE, teal #58A4B0 */
+    --bg: #e8f7ee; --card: #fbfefc; --ink: #1f3326; --muted: #55695b; --line: #c8ddd0;
+    --accent: #a53b54; --accent-ink: #ffffff; --accent-soft: #f4e0e4;
+    --summary: #3a5a40; --summary-ink: #e8f7ee;
+    --bar: #cd9c65; --chip: #f0e0cb; --track: #d6e8dc;
+    --ok: #58a4b0; --ok-ink: #2c7480; --ok-soft: #d8eef1;
     --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
     --body: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0f1a19; --card: #172524; --ink: #e5eeeb; --muted: #94a8a4; --line: #2a3b39;
-      --accent: #ff7a33; --accent-ink: #1a0d05; --accent-soft: #3d2416;
-      --ok: #69db7c; --ok-soft: #1b3524; --track: #243432; color-scheme: dark;
+      --bg: #121c16; --card: #1a2a20; --ink: #e8f7ee; --muted: #9bb4a3; --line: #2c4234;
+      --accent: #b8475f; --accent-ink: #ffffff; --accent-soft: #3f2129;
+      --summary: #3a5a40; --summary-ink: #e8f7ee;
+      --bar: #cd9c65; --chip: #4a3a27; --track: #2a3e31;
+      --ok: #58a4b0; --ok-ink: #8ccbd5; --ok-soft: #1b363b; color-scheme: dark;
     }
   }
   * { box-sizing: border-box; }
@@ -50,16 +55,16 @@
   .grow { flex: 1; min-width: 0; }
 
   /* Summary */
-  .summary { background: var(--ink); color: var(--bg); border: 0; }
-  .summary .label { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+  .summary { background: var(--summary); color: var(--summary-ink); border: 0; }
+  .summary .label { color: color-mix(in srgb, var(--summary-ink) 72%, transparent); }
   .big { font-family: var(--display); font-size: 3.2rem; font-weight: 700; line-height: 1; }
   .big small { font-size: 1.2rem; font-weight: 600; margin-left: 4px; }
-  .summary .bar { background: color-mix(in srgb, var(--bg) 22%, transparent); }
+  .summary .bar { background: color-mix(in srgb, var(--summary-ink) 22%, transparent); }
   .summary .meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .9rem; margin-top: 10px;
-                   color: color-mix(in srgb, var(--bg) 82%, transparent); }
+                   color: color-mix(in srgb, var(--summary-ink) 85%, transparent); }
 
   .bar { height: 8px; border-radius: 99px; background: var(--track); overflow: hidden; }
-  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--bar); border-radius: 99px; transition: width .3s; }
   .bar.done > i { background: var(--ok); }
 
   /* Categories */
@@ -67,7 +72,7 @@
   .cat { display: flex; flex-direction: column; gap: 6px; }
   .cat .name { font-weight: 600; }
   .cat .left { font-family: var(--display); font-size: 1.25rem; font-weight: 700; }
-  .cat .left.done { color: var(--ok); }
+  .cat .left.done { color: var(--ok-ink); }
   .cat .sub { font-size: .85rem; }
 
   /* Forms */
@@ -77,7 +82,7 @@
   input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .plan-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 36px; gap: 8px; align-items: end; }
   .plan-grid .h { font-size: .75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
   details > summary { cursor: pointer; list-style: none; }
   details > summary::-webkit-details-marker { display: none; }
   details > summary .chev { transition: transform .2s; display: inline-block; }
@@ -89,8 +94,9 @@
   button.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 6px 8px; }
   button.icon { width: 36px; height: 38px; padding: 0; display: grid; place-items: center; }
   button.small { padding: 5px 10px; font-size: .9rem; }
-  button.danger { color: #c92a2a; }
-  @media (prefers-color-scheme: dark) { button.danger { color: #ff8787; } }
+  .switch { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+  .switch input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+  .switch small { display: block; font-weight: 400; color: var(--muted); font-size: .85rem; }
 
   /* Basket */
   .items { display: flex; flex-direction: column; }
@@ -99,7 +105,7 @@
   .item .t { font-weight: 600; overflow-wrap: anywhere; }
   .item .d { font-size: .85rem; color: var(--muted); }
   .chip { display: inline-block; font-size: .75rem; font-weight: 600; padding: 1px 8px; border-radius: 99px;
-          background: var(--accent-soft); color: var(--ink); margin-right: 6px; }
+          background: var(--chip); color: var(--ink); margin-right: 6px; }
   .qty { display: flex; align-items: center; gap: 4px; grid-row: span 2; }
   .qty b { min-width: 22px; text-align: center; }
   .empty { padding: 8px 0 2px; }
@@ -125,7 +131,7 @@
                       box-shadow: 0 0 12px var(--accent); }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .seg button { flex: 1; border: 0; border-radius: 0; background: transparent; color: var(--muted); }
-  .seg button.on { background: var(--accent-soft); color: var(--ink); }
+  .seg button.on { background: var(--chip); color: var(--ink); }
   .note { font-size: .85rem; color: var(--muted); }
   .result { font-family: var(--display); font-size: 1.5rem; font-weight: 700; }
   .status { font-size: .9rem; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); }
@@ -150,7 +156,7 @@
     <div class="meta num" id="totalMeta"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="catsCard">
     <div class="cats" id="cats"></div>
   </section>
 
@@ -169,12 +175,23 @@
           </select>
         </label>
       </div>
-      <div class="plan-grid" id="planGrid"></div>
-      <div class="row between">
-        <button class="small" id="addCat" type="button">+ Add category</button>
-        <span class="note num" id="perDayTotal"></span>
+      <div class="two">
+        <label class="f">kcal per day
+          <input id="perDay" type="number" inputmode="numeric" min="0" step="50">
+        </label>
+        <label class="f"><span id="leftLabel">Still in your pack (kcal)</span>
+          <input id="leftTotal" type="number" inputmode="numeric" min="0" step="50" placeholder="0">
+        </label>
       </div>
-      <p class="note" style="margin:0">"In pack" is food you still carry and will eat on this stretch. It counts as already bought.</p>
+      <p class="note" style="margin:0">Food you still carry and will eat on this stretch counts as already bought.</p>
+      <label class="switch"><input type="checkbox" id="splitToggle">
+        <span>Split over meals<small>Breakfast, lunch, dinner, snacks, or your own categories</small></span>
+      </label>
+      <div id="splitBox" style="display:flex; flex-direction:column; gap:12px" hidden>
+        <div class="plan-grid" id="planGrid"></div>
+        <button class="small" id="addCat" type="button" style="align-self:flex-start">+ Add category</button>
+        <p class="note" style="margin:0">Changing kcal per day above scales all meals. "In pack" per meal is optional; what you can't sort goes in the box above and is spread over the meals.</p>
+      </div>
     </div>
   </details>
 
@@ -234,7 +251,7 @@
       <span class="note num" id="pDensity"></span>
     </div>
     <div class="two">
-      <label class="f">Counts towards<select id="pCat"></select></label>
+      <label class="f" id="pCatWrap">Counts towards<select id="pCat"></select></label>
       <label class="f">How many<input id="pQty" type="number" inputmode="numeric" min="1" step="1" value="1"></label>
     </div>
     <button class="primary" type="submit" id="addSubmit">Add to basket</button>
@@ -268,6 +285,9 @@ const DEFAULT = {
   town: 1,
   days: 4,
   buffer: 0,
+  perDay: 3500,
+  leftTotal: 0,   // kcal in pack; when split, the part not sorted by meal
+  split: false,
   cats: [
     { id: "b", name: "Breakfast", perDay: 600, left: 0 },
     { id: "l", name: "Lunch", perDay: 800, left: 0 },
@@ -282,7 +302,16 @@ let state = load();
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && Array.isArray(s.cats)) return Object.assign(structuredClone(DEFAULT), s);
+    if (s && Array.isArray(s.cats)) {
+      if (s.split === undefined) {
+        // First version always split by category: fold it into one daily total
+        s.perDay = s.cats.reduce((t, c) => t + (+c.perDay || 0), 0) || DEFAULT.perDay;
+        s.leftTotal = s.cats.reduce((t, c) => t + (+c.left || 0), 0);
+        s.cats.forEach((c) => c.left = 0);
+        s.split = false;
+      }
+      return Object.assign(structuredClone(DEFAULT), s);
+    }
   } catch (e) {}
   return structuredClone(DEFAULT);
 }
@@ -291,24 +320,35 @@ function save() {
 }
 
 // ---------- Maths ----------
+const daysTotal = () => (+state.days || 0) + (+state.buffer || 0);
+const catSum = () => state.cats.reduce((t, c) => t + (+c.perDay || 0), 0);
 function needOf(cat) {
-  const days = (+state.days || 0) + (+state.buffer || 0);
-  return Math.max(0, days * (+cat.perDay || 0) - (+cat.left || 0));
+  // Unsorted food in the pack is spread over the meals by their share of the day
+  const share = catSum() ? (+cat.perDay || 0) / catSum() : 0;
+  return Math.max(0, daysTotal() * (+cat.perDay || 0) - (+cat.left || 0) - (+state.leftTotal || 0) * share);
 }
 function boughtOf(catId) {
   return state.basket.filter((i) => i.cat === catId).reduce((t, i) => t + i.kcal * i.qty, 0);
 }
 function totals() {
-  let need = 0, bought = 0, left = 0;
-  for (const c of state.cats) {
-    const n = needOf(c), b = boughtOf(c.id);
-    need += n; bought += b; left += Math.max(0, n - b);
+  const bought = state.basket.reduce((t, i) => t + i.kcal * i.qty, 0);
+  let need, left;
+  if (!state.split) {
+    need = Math.max(0, daysTotal() * (+state.perDay || 0) - (+state.leftTotal || 0));
+    left = Math.max(0, need - bought);
+  } else {
+    need = 0; left = 0;
+    let sorted = 0;
+    for (const c of state.cats) {
+      const n = needOf(c), b = boughtOf(c.id);
+      need += n; sorted += b; left += Math.max(0, n - b);
+    }
+    // Items without a (still existing) category count towards the total
+    left = Math.max(0, left - (bought - sorted));
   }
-  // Items whose category was deleted still count as food bought
-  const orphan = state.basket.filter((i) => !state.cats.some((c) => c.id === i.cat)).reduce((t, i) => t + i.kcal * i.qty, 0);
   const grams = state.basket.reduce((t, i) => t + (i.grams || 0) * i.qty, 0);
   const gramsKnownKcal = state.basket.filter((i) => i.grams).reduce((t, i) => t + i.kcal * i.qty, 0);
-  return { need, bought: bought + orphan, left, grams, density: grams ? gramsKnownKcal / grams * 100 : 0 };
+  return { need, bought, left, grams, density: grams ? gramsKnownKcal / grams * 100 : 0 };
 }
 
 // ---------- Render ----------
@@ -319,7 +359,7 @@ function render() {
   const pct = t.need ? Math.min(100, t.bought / t.need * 100) : 100;
   $("totalBar").style.width = pct + "%";
   $("totalBar").parentElement.classList.toggle("done", t.left <= 0);
-  const days = (+state.days || 0) + (+state.buffer || 0);
+  const days = daysTotal();
   const meta = [`${fmt(t.bought)} of ${fmt(t.need)} kcal`, `${days} ${days === 1 ? "day" : "days"}`];
   if (t.grams) meta.push(`${(t.grams / 1000).toFixed(2)} kg in basket`, `${fmt(t.density)} kcal/100 g`);
   $("totalMeta").textContent = meta.join("  ·  ");
@@ -327,7 +367,8 @@ function render() {
   // Category progress
   const cats = $("cats");
   cats.innerHTML = "";
-  for (const c of state.cats) {
+  $("catsCard").hidden = !state.split;
+  if (state.split) for (const c of state.cats) {
     const n = needOf(c), b = boughtOf(c.id), left = n - b;
     const el = document.createElement("div");
     el.className = "cat";
@@ -337,7 +378,7 @@ function render() {
       <div class="sub muted num"></div>`;
     el.querySelector(".name").textContent = c.name;
     el.querySelector(".left").textContent = left > 0 ? fmt(left) + " to go" : (left < 0 ? "+" + fmt(-left) + " extra" : "Done");
-    el.querySelector(".sub").textContent = `${fmt(b)} of ${fmt(n)} kcal bought` + (c.left ? ` · ${fmt(c.left)} already in pack` : "");
+    el.querySelector(".sub").textContent = `${fmt(b)} of ${fmt(n)} kcal bought` + (c.left ? ` · ${fmt(c.left)} in pack` : "");
     cats.appendChild(el);
   }
 
@@ -346,8 +387,15 @@ function render() {
 }
 
 function renderPlan() {
-  $("days").value = state.days;
+  // Leave a field alone while it's being typed in
+  const put = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
+  put("days", state.days);
+  put("perDay", state.perDay || "");
+  put("leftTotal", state.leftTotal || "");
   $("buffer").value = String(state.buffer);
+  $("splitToggle").checked = state.split;
+  $("splitBox").hidden = !state.split;
+  $("leftLabel").textContent = state.split ? "In pack, unsorted (kcal)" : "Still in your pack (kcal)";
   const g = $("planGrid");
   // Don't rebuild while someone is typing in it (keeps focus and the keyboard open)
   if (g.contains(document.activeElement)) return;
@@ -356,18 +404,21 @@ function renderPlan() {
     const name = Object.assign(document.createElement("input"), { value: c.name, id: "n_" + c.id, autocomplete: "off" });
     name.setAttribute("aria-label", "Category name");
     name.oninput = () => { c.name = name.value; save(); renderLite(); };
-    const per = numInput("p_" + c.id, c.perDay, (v) => { c.perDay = v; });
+    const per = numInput("p_" + c.id, c.perDay, (v) => { c.perDay = v; state.perDay = catSum(); });
     per.setAttribute("aria-label", c.name + " kcal per day");
     const left = numInput("l_" + c.id, c.left, (v) => { c.left = v; });
     left.setAttribute("aria-label", c.name + " kcal still in pack");
     const del = Object.assign(document.createElement("button"), { type: "button", className: "icon ghost", textContent: "×" });
     del.setAttribute("aria-label", "Remove " + c.name);
     del.onclick = () => ask(`Remove ${c.name}?`, "Items already in the basket for it still count towards the total.", () => {
-      state.cats = state.cats.filter((x) => x !== c); save(); render();
+      state.cats = state.cats.filter((x) => x !== c);
+      if (!state.cats.length) state.split = false;
+      else state.perDay = catSum();
+      state.leftTotal = (+state.leftTotal || 0) + (+c.left || 0);
+      save(); render();
     });
     g.append(name, per, left, del);
   }
-  $("perDayTotal").textContent = "Total " + fmt(state.cats.reduce((t, c) => t + (+c.perDay || 0), 0)) + " kcal/day";
 }
 function numInput(id, value, set) {
   const i = Object.assign(document.createElement("input"), { type: "number", inputMode: "numeric", min: 0, step: 50, id, value: value || "" });
@@ -399,7 +450,8 @@ function renderBasket() {
       <div class="d num"><span class="chip"></span><span class="k"></span></div>`;
     el.querySelector(".t").textContent = it.name;
     el.querySelector(".qty b").textContent = it.qty;
-    el.querySelector(".chip").textContent = cat ? cat.name : "No category";
+    el.querySelector(".chip").textContent = cat ? cat.name : "Not sorted";
+    el.querySelector(".chip").hidden = !state.split;
     el.querySelector(".k").textContent = `${fmt(it.kcal)} kcal${it.qty > 1 ? " × " + it.qty + " = " + fmt(it.kcal * it.qty) : ""}` +
       (it.grams ? ` · ${fmt(it.grams * it.qty)} g` : "");
     el.querySelectorAll("[data-d]").forEach((b) => b.onclick = () => {
@@ -415,6 +467,35 @@ function renderBasket() {
 
 // ---------- Plan inputs ----------
 $("days").oninput = (e) => { state.days = +e.target.value || 0; save(); renderLite(); };
+$("perDay").oninput = (e) => {
+  state.perDay = +e.target.value || 0;
+  if (state.split) scaleCats(state.perDay);
+  save(); renderLite();
+};
+$("leftTotal").oninput = (e) => { state.leftTotal = +e.target.value || 0; save(); renderLite(); };
+$("splitToggle").onchange = (e) => {
+  state.split = e.target.checked;
+  if (state.split) {
+    if (!state.cats.length) state.cats = structuredClone(DEFAULT.cats);
+    scaleCats(state.perDay || DEFAULT.perDay);
+  } else {
+    // Per-meal "in pack" amounts move into the single total, so nothing is lost
+    state.leftTotal = (+state.leftTotal || 0) + state.cats.reduce((t, c) => t + (+c.left || 0), 0);
+    state.cats.forEach((c) => c.left = 0);
+  }
+  save(); render();
+};
+function scaleCats(total) {
+  // Keep each meal's share of the day, rounded to 10 kcal; the last one takes the rounding
+  const sum = catSum();
+  const shares = state.cats.map((c) => sum ? (+c.perDay || 0) / sum : 1 / state.cats.length);
+  let used = 0;
+  state.cats.forEach((c, i) => {
+    c.perDay = i === state.cats.length - 1 ? Math.max(0, total - used) : Math.round(total * shares[i] / 10) * 10;
+    used += c.perDay;
+  });
+  state.perDay = total;
+}
 $("buffer").onchange = (e) => { state.buffer = +e.target.value; save(); render(); };
 $("addCat").onclick = () => {
   const c = { id: uid(), name: "New category", perDay: 0, left: 0 };
@@ -424,7 +505,7 @@ $("addCat").onclick = () => {
 $("newTown").onclick = () => ask("Start the next stretch?",
   "This empties the basket and sets \"In pack\" to zero, so you can fill in what you still carry. Days and kcal per day stay the same.",
   () => {
-    state.basket = []; state.cats.forEach((c) => c.left = 0); state.town += 1;
+    state.basket = []; state.leftTotal = 0; state.cats.forEach((c) => c.left = 0); state.town += 1;
     save(); render(); $("planBox").open = true; toast("Town " + state.town + ": fill in what's left in your pack");
   });
 
@@ -620,6 +701,7 @@ function openAdd({ code = null, product = null, edit = null, status = null } = {
   ["pName", "pK100", "pGrams", "pKPack", "pGrams2"].forEach((id) => $(id).value = "");
   $("pQty").value = 1;
   $("pCat").value = suggestedCat();
+  $("pCatWrap").hidden = !state.split;
   $("addTitle").textContent = edit ? "Edit item" : "Add product";
   $("addSubmit").textContent = edit ? "Save" : "Add to basket";
   setMode("100");
@@ -651,10 +733,11 @@ $("addForm").onsubmit = (e) => {
     name: $("pName").value.trim() || "Product",
     kcal, grams: +$("pGrams").value || null,
     qty: Math.max(1, Math.round(+$("pQty").value || 1)),
-    cat: $("pCat").value, code: addCtx.code,
+    cat: state.split ? $("pCat").value : (addCtx.edit ? addCtx.edit.cat : null), code: addCtx.code,
   };
   if (item.code) {
-    state.products[item.code] = { name: item.name, kcal, grams: item.grams, k100: mode === "100" ? +$("pK100").value : null, cat: item.cat };
+    state.products[item.code] = { name: item.name, kcal, grams: item.grams, k100: mode === "100" ? +$("pK100").value : null,
+      cat: item.cat || (state.products[item.code] || {}).cat || null };
   }
   if (addCtx.edit) Object.assign(addCtx.edit, item);
   else {
@@ -664,8 +747,8 @@ $("addForm").onsubmit = (e) => {
   }
   save(); render();
   $("addSheet").hidden = true;
-  const c = state.cats.find((x) => x.id === item.cat);
-  if (!addCtx.edit) toast(`+${fmt(kcal * item.qty)} kcal to ${c ? c.name : "basket"}`);
+  const c = state.split && state.cats.find((x) => x.id === item.cat);
+  if (!addCtx.edit) toast(`+${fmt(kcal * item.qty)} kcal` + (c ? ` to ${c.name}` : ""));
 };
 $("manualBtn").onclick = () => openAdd();
 

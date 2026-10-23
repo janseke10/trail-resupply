@@ -1,6 +1,6 @@
 // Keeps the app working without signal: the page and scanner library come from the cache.
 // Product lookups still need the internet; products scanned before are remembered in the app itself.
-const CACHE = "resupply-v1";
+const CACHE = "resupply-v2";
 const SHELL = ["./", "index.html", "manifest.webmanifest",
   "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"];
 
