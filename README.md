@@ -15,5 +15,5 @@ Then scan products in the supermarket: each scan takes its calories off what you
 Files: `index.html` (the whole app), `sw.js` (offline cache), `manifest.webmanifest` (home-screen app).
 
 The camera only works over https. Live at https://janseke10.github.io/trail-resupply/
-double-clicking the file works for typing products in, not for scanning.
+Opening the file locally works for searching and typing products in, not for scanning.
 
