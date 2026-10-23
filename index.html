@@ -133,6 +133,12 @@
   .seg button { flex: 1; border: 0; border-radius: 0; background: transparent; color: var(--muted); }
   .seg button.on { background: var(--chip); color: var(--ink); }
   .note { font-size: .85rem; color: var(--muted); }
+  #searchSheet .panel { min-height: 75%; }
+  .results { display: flex; flex-direction: column; gap: 6px; }
+  .results .h { margin-top: 6px; }
+  .hit { text-align: left; font-weight: 400; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; }
+  .hit b { font-weight: 600; overflow-wrap: anywhere; }
+  .hit span { font-size: .85rem; color: var(--muted); }
   .result { font-family: var(--display); font-size: 1.5rem; font-weight: 700; }
   .status { font-size: .9rem; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); }
   .status.ok { background: var(--ok-soft); }
@@ -207,7 +213,7 @@
 <div class="dock">
   <div class="in">
     <button class="primary scan" id="scanBtn" type="button">Scan a product</button>
-    <button class="alt" id="manualBtn" type="button">Type it in</button>
+    <button class="alt" id="searchBtn" type="button">Search</button>
   </div>
 </div>
 
@@ -223,6 +229,20 @@
       <input id="codeInput" inputmode="numeric" pattern="[0-9]*" placeholder="Or type the barcode number" autocomplete="off">
       <button class="small" type="submit">Look up</button>
     </form>
+  </div>
+</div>
+
+<!-- Search by name -->
+<div class="sheet" id="searchSheet" hidden>
+  <div class="panel">
+    <div class="row between"><h2>Find a product</h2><button class="ghost" id="searchClose" type="button">Close</button></div>
+    <form class="row" id="searchForm">
+      <input id="searchInput" type="search" enterkeyhint="search" autocomplete="off" placeholder="e.g. snickers, tortilla wraps">
+      <button class="primary small" type="submit">Search</button>
+    </form>
+    <div class="status" id="searchStatus" hidden></div>
+    <div class="results" id="searchResults"></div>
+    <button class="ghost" id="manualBtn" type="button">Not listed? Type the label in yourself</button>
   </div>
 </div>
 
@@ -647,19 +667,101 @@ async function fetchOFF(code) {
     if (!r.ok) return null;
     const j = await r.json();
     if (j.status !== 1 || !j.product) return null;
-    const pr = j.product, n = pr.nutriments || {};
-    let k100 = n["energy-kcal_100g"];
-    if (k100 == null && n["energy_100g"] != null) k100 = n["energy_100g"] / 4.184; // kJ only
-    const grams = +pr.product_quantity || parseGrams(pr.quantity);
-    const name = [pr.brands && pr.brands.split(",")[0], pr.product_name || pr.product_name_en].filter(Boolean).join(" ") || "Product " + code;
-    return { name, k100: k100 != null ? Math.round(k100) : null, grams: grams || null };
+    return toProduct(j.product, code);
   } catch (e) { return null; }
 }
+function toProduct(pr, code) {
+  const n = pr.nutriments || {};
+  let k100 = n["energy-kcal_100g"];
+  if (k100 == null && n["energy_100g"] != null) k100 = n["energy_100g"] / 4.184; // kJ only
+  const grams = +pr.product_quantity || parseGrams(pr.quantity);
+  const brands = (Array.isArray(pr.brands) ? pr.brands : String(pr.brands || "").split(",")).map((b) => b.trim()).filter(Boolean);
+  const title = (pr.product_name || pr.product_name_en || "").trim();
+  // Don't say "Snickers Snickers" (or "Mars Snickers") when a brand is already in the name
+  const named = brands.some((b) => title.toLowerCase().includes(b.toLowerCase()));
+  const name = (brands[0] && !named ? brands[0] + " " + title : title).trim() || "Product " + code;
+  return { code: code || pr.code || null, name, k100: k100 != null ? Math.round(k100) : null, grams: grams || null };
+}
+
+// ---------- Search by name ----------
+const FIELDS = "code,product_name,product_name_en,brands,nutriments,product_quantity,quantity";
+async function searchOFF(q) {
+  const e = encodeURIComponent(q);
+  // Classic search first (sorted by how often people scan it), the newer search service as backup
+  const urls = [
+    `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${e}&search_simple=1&action=process&json=1&page_size=25&sort_by=unique_scans_n&fields=${FIELDS}`,
+    `https://search.openfoodfacts.org/search?q=${e}&page_size=25&fields=${FIELDS}`,
+  ];
+  for (const url of urls) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10000);
+      const r = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const list = j.products || j.hits;
+      if (Array.isArray(list)) return list.map((pr) => toProduct(pr)).filter((p) => p.k100);
+    } catch (e) {}
+  }
+  return null; // couldn't reach Open Food Facts
+}
+function localMatches(q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  return Object.entries(state.products)
+    .filter(([, p]) => words.every((w) => p.name.toLowerCase().includes(w)))
+    .map(([code, p]) => Object.assign({ code }, p));
+}
+function hitButton(p, from) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "hit";
+  const kcal = p.k100 && p.grams ? p.k100 * p.grams / 100 : p.kcal;
+  const bits = [p.grams ? fmt(p.grams) + " g" : "", kcal ? fmt(kcal) + " kcal per pack" : "", p.k100 ? fmt(p.k100) + " kcal/100 g" : ""];
+  b.innerHTML = "<b></b><span class=\"num\"></span>";
+  b.querySelector("b").textContent = p.name;
+  b.querySelector("span").textContent = bits.filter(Boolean).join(" · ");
+  b.onclick = () => {
+    $("searchSheet").hidden = true;
+    openAdd({ code: p.code, product: p, status: from === "mine" ? ["ok", "Added before"]
+      : ["ok", "From Open Food Facts. Check the numbers against the pack" + (p.grams ? "." : ", and fill in the pack weight.")] });
+  };
+  return b;
+}
+function heading(text) {
+  const h = document.createElement("div"); h.className = "label h"; h.textContent = text; return h;
+}
+let searchSeq = 0;
+async function runSearch(q) {
+  q = q.trim();
+  const box = $("searchResults");
+  box.innerHTML = "";
+  if (q.length < 2) { setSearchStatus("", "Type at least two letters."); return; }
+  const mine = localMatches(q);
+  if (mine.length) { box.append(heading("Added before")); mine.forEach((p) => box.append(hitButton(p, "mine"))); }
+  setSearchStatus("", "Searching Open Food Facts…");
+  const seq = ++searchSeq;
+  const found = await searchOFF(q);
+  if (seq !== searchSeq || $("searchSheet").hidden) return;
+  if (found === null) { setSearchStatus("", navigator.onLine === false ? "No signal. Only products you added before can be found." : "Couldn't reach Open Food Facts. Try again in a minute."); return; }
+  const fresh = found.filter((p) => !mine.some((m) => m.code === p.code));
+  if (!fresh.length) { setSearchStatus("", mine.length ? "" : "Nothing found. Try fewer or other words (brand names work well), or type the label in."); return; }
+  setSearchStatus("", "");
+  box.append(heading("Open Food Facts"));
+  fresh.forEach((p) => box.append(hitButton(p, "off")));
+}
+function setSearchStatus(kind, msg) { const s = $("searchStatus"); s.className = "status " + kind; s.textContent = msg; s.hidden = !msg; }
+$("searchBtn").onclick = () => {
+  $("searchSheet").hidden = false; setSearchStatus("", "");
+  $("searchInput").focus(); $("searchInput").select();
+};
+$("searchClose").onclick = () => { $("searchSheet").hidden = true; };
+$("searchForm").onsubmit = (e) => { e.preventDefault(); $("searchInput").blur(); runSearch($("searchInput").value); };
 function parseGrams(q) {
   if (!q) return null;
-  const m = String(q).replace(",", ".").match(/([\d.]+)\s*(kg|g|ml|l|cl)\b/i);
+  // "200 g", "1,5 kg", and multipacks like "4 x 50 g"
+  const m = String(q).replace(",", ".").match(/(?:(\d+)\s*[x×]\s*)?([\d.]+)\s*(kg|g|ml|l|cl)\b/i);
   if (!m) return null;
-  const v = +m[1], u = m[2].toLowerCase();
+  const v = +m[2] * (m[1] ? +m[1] : 1), u = m[3].toLowerCase();
   return u === "kg" || u === "l" ? v * 1000 : u === "cl" ? v * 10 : v;
 }
 
@@ -750,7 +852,11 @@ $("addForm").onsubmit = (e) => {
   const c = state.split && state.cats.find((x) => x.id === item.cat);
   if (!addCtx.edit) toast(`+${fmt(kcal * item.qty)} kcal` + (c ? ` to ${c.name}` : ""));
 };
-$("manualBtn").onclick = () => openAdd();
+$("manualBtn").onclick = () => {
+  const name = $("searchInput").value.trim();
+  $("searchSheet").hidden = true;
+  openAdd(name ? { product: { name }, status: ["", "Copy the numbers from the label."] } : {});
+};
 
 // Close sheets by tapping the dark background
 document.querySelectorAll(".sheet").forEach((s) => s.addEventListener("click", (e) => {
